@@ -22,7 +22,7 @@ exports.sendMail = (req, res) => {
     const id = req.params.customer_id;
     Customer.findById(id, (err, foundCustomer) => {
         if (err) {
-            res.status(404).json({
+            res.status(500).json({
                 status: "fail",
                 message: "Error occured while finding customer"
             });
@@ -65,7 +65,16 @@ exports.sendMail = (req, res) => {
 }
 
 exports.sendSMS = async (req, res) => {
-    const customer = await Customer.findById(req.params.customer_id)
+    let customer
+
+    try {
+        customer = await Customer.findById(req.params.customer_id)
+    } catch (error) {
+        res.status(500).json({
+            status: "fail",
+            message: "Error occured while finding customer"
+        });
+    }
 
     if (!customer) {
         res.status(404).json({
@@ -84,6 +93,18 @@ exports.sendSMS = async (req, res) => {
             from: TWILIO_NUMBER,
             to: customer.phone_number
         })
-        .then(message => console.log(message.sid));
+        .then(message => {
+            res.status(200).json({
+                status: "success",
+                message: message
+            })
+        })
+        .catch(error => {
+            res.status(500).json({
+                status: "fail",
+                message: "couldn't send SMS to customer customer",
+                Error: error
+            });
+        })
 
 }
